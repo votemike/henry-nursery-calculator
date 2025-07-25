@@ -137,6 +137,25 @@ export default function SalaryCalculator() {
         <p className="text-muted-foreground">Calculate your take-home pay, tax, and pension contributions</p>
       </div>
 
+      {/* Warning Banner */}
+      <div className="max-w-4xl mx-auto">
+        <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
+          <div className="flex items-start gap-3">
+            <div className="text-amber-600 mt-0.5">⚠️</div>
+            <div>
+              <p className="text-amber-800 font-medium">
+                Disclaimer: This calculator is "vibe-coded" for educational purposes
+              </p>
+              <p className="text-amber-700 text-sm mt-1">
+                Results should be taken with a pinch of salt. Tax calculations are approximate and may not reflect your
+                exact situation. Always consult with a qualified financial advisor or use official HMRC tools for
+                accurate tax planning.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Input Controls */}
         <div className="space-y-6">
