@@ -76,6 +76,7 @@ export default function SalaryCalculator() {
   const [salary, setSalary] = useState(50000)
   const [bonus, setBonus] = useState(0)
   const [pensionContributionPercent, setPensionContributionPercent] = useState(5)
+  const [employerPensionPercent, setEmployerPensionPercent] = useState(3)
   const [electricCarSacrifice, setElectricCarSacrifice] = useState(0)
   const [bikeToWorkSacrifice, setBikeToWorkSacrifice] = useState(0)
   const [nurseryCostPerHour, setNurseryCostPerHour] = useState(12)
@@ -86,7 +87,7 @@ export default function SalaryCalculator() {
     const grossIncome = salary + bonus
     const totalSalarySacrifice = electricCarSacrifice + bikeToWorkSacrifice
     const employeePensionContribution = (grossIncome * pensionContributionPercent) / 100
-    const employerPensionContribution = (grossIncome * 3) / 100 // Assuming 3% employer contribution
+    const employerPensionContribution = (grossIncome * employerPensionPercent) / 100 // Use dynamic employer contribution
     const totalPensionContribution = employeePensionContribution + employerPensionContribution
 
     const taxableIncome = grossIncome - employeePensionContribution - totalSalarySacrifice
@@ -121,6 +122,7 @@ export default function SalaryCalculator() {
     salary,
     bonus,
     pensionContributionPercent,
+    employerPensionPercent,
     electricCarSacrifice,
     bikeToWorkSacrifice,
     nurseryCostPerHour,
@@ -188,6 +190,21 @@ export default function SalaryCalculator() {
                 />
                 <p className="text-sm text-muted-foreground">
                   £{calculations.employeePensionContribution.toLocaleString()} per year
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="employer-pension">Employer Contribution: {employerPensionPercent}%</Label>
+                <Slider
+                  id="employer-pension"
+                  min={0}
+                  max={20}
+                  step={0.5}
+                  value={[employerPensionPercent]}
+                  onValueChange={(value) => setEmployerPensionPercent(value[0])}
+                  className="w-full"
+                />
+                <p className="text-sm text-muted-foreground">
+                  £{calculations.employerPensionContribution.toLocaleString()} per year
                 </p>
               </div>
             </CardContent>
