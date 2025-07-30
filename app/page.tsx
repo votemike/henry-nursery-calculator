@@ -23,7 +23,8 @@ const NI_BRACKETS = [
 
 const PENSION_ANNUAL_ALLOWANCE = 60000
 const CHILDCARE_FREE_HOURS_THRESHOLD = 100000
-const FREE_CHILDCARE_HOURS_PER_WEEK = 30
+const FREE_CHILDCARE_HOURS_PER_WEEK_UNDER_100K = 30
+const FREE_CHILDCARE_HOURS_PER_WEEK_3_4_YEARS = 15
 const SCHOOL_WEEKS_PER_YEAR = 38
 
 function calculateTax(taxableIncome: number): number {
@@ -81,23 +82,37 @@ export default function SalaryCalculator() {
   const [bikeToWorkSacrifice, setBikeToWorkSacrifice] = useState(0)
   const [nurseryCostPerHour, setNurseryCostPerHour] = useState(12)
   const [nurseryHoursPerWeek, setNurseryHoursPerWeek] = useState(40)
-  const [numberOfChildren, setNumberOfChildren] = useState(1)
+  const [children9MonthsTo3Years, setChildren9MonthsTo3Years] = useState(1)
+  const [children3To4Years, setChildren3To4Years] = useState(0)
 
   const calculations = useMemo(() => {
     const grossIncome = salary + bonus
     const totalSalarySacrifice = electricCarSacrifice + bikeToWorkSacrifice
     const employeePensionContribution = (grossIncome * pensionContributionPercent) / 100
-    const employerPensionContribution = (grossIncome * employerPensionPercent) / 100 // Use dynamic employer contribution
+    const employerPensionContribution = (grossIncome * employerPensionPercent) / 100
     const totalPensionContribution = employeePensionContribution + employerPensionContribution
 
     const taxableIncome = grossIncome - employeePensionContribution - totalSalarySacrifice
     const tax = calculateTax(taxableIncome)
     const nationalInsurance = calculateNI(grossIncome - employeePensionContribution - totalSalarySacrifice)
 
-    // Nursery calculations
-    const freeHoursPerChild = taxableIncome < CHILDCARE_FREE_HOURS_THRESHOLD ? FREE_CHILDCARE_HOURS_PER_WEEK : 0
-    const paidHoursPerChild = Math.max(0, nurseryHoursPerWeek - freeHoursPerChild)
-    const nurseryAnnualCost = paidHoursPerChild * nurseryCostPerHour * SCHOOL_WEEKS_PER_YEAR * numberOfChildren
+    // Nursery calculations for different age groups
+    const isUnder100k = taxableIncome < CHILDCARE_FREE_HOURS_THRESHOLD
+
+    // Children 9 months to 3 years: 30 hours free if under £100k, otherwise 0
+    const freeHours9MonthsTo3Years = isUnder100k ? FREE_CHILDCARE_HOURS_PER_WEEK_UNDER_100K : 0
+    const paidHours9MonthsTo3Years = Math.max(0, nurseryHoursPerWeek - freeHours9MonthsTo3Years)
+    const cost9MonthsTo3Years =
+      paidHours9MonthsTo3Years * nurseryCostPerHour * SCHOOL_WEEKS_PER_YEAR * children9MonthsTo3Years
+
+    // Children 3-4 years: 15 hours free always, 30 hours if under £100k
+    const freeHours3To4Years = isUnder100k
+      ? FREE_CHILDCARE_HOURS_PER_WEEK_UNDER_100K
+      : FREE_CHILDCARE_HOURS_PER_WEEK_3_4_YEARS
+    const paidHours3To4Years = Math.max(0, nurseryHoursPerWeek - freeHours3To4Years)
+    const cost3To4Years = paidHours3To4Years * nurseryCostPerHour * SCHOOL_WEEKS_PER_YEAR * children3To4Years
+
+    const nurseryAnnualCost = cost9MonthsTo3Years + cost3To4Years
 
     const takeHome =
       grossIncome - employeePensionContribution - tax - nationalInsurance - totalSalarySacrifice - nurseryAnnualCost
@@ -114,8 +129,13 @@ export default function SalaryCalculator() {
       electricCarSacrifice,
       bikeToWorkSacrifice,
       nurseryAnnualCost,
-      freeHoursPerChild,
-      paidHoursPerChild,
+      freeHours9MonthsTo3Years,
+      freeHours3To4Years,
+      paidHours9MonthsTo3Years,
+      paidHours3To4Years,
+      cost9MonthsTo3Years,
+      cost3To4Years,
+      isUnder100k,
       takeHome,
     }
   }, [
@@ -127,7 +147,8 @@ export default function SalaryCalculator() {
     bikeToWorkSacrifice,
     nurseryCostPerHour,
     nurseryHoursPerWeek,
-    numberOfChildren,
+    children9MonthsTo3Years,
+    children3To4Years,
   ])
 
   return (
@@ -293,23 +314,53 @@ export default function SalaryCalculator() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="children">Number of Children</Label>
+                <Label htmlFor="children-9m-3y">Children aged 9 months - 3 years</Label>
                 <Input
-                  id="children"
+                  id="children-9m-3y"
                   type="number"
                   min="0"
-                  value={numberOfChildren === 0 ? "" : numberOfChildren}
+                  value={children9MonthsTo3Years === 0 ? "" : children9MonthsTo3Years}
                   onChange={(e) => {
                     const value = e.target.value
-                    setNumberOfChildren(value === "" ? 0 : Number(value))
+                    setChildren9MonthsTo3Years(value === "" ? 0 : Number(value))
                   }}
                 />
               </div>
-              {calculations.freeHoursPerChild > 0 && (
-                <p className="text-sm text-green-600">
-                  ✓ {calculations.freeHoursPerChild} free hours per week per child (taxable income {"<"} £100k)
-                </p>
-              )}
+              <div className="space-y-2">
+                <Label htmlFor="children-3-4y">Children aged 3-4 years</Label>
+                <Input
+                  id="children-3-4y"
+                  type="number"
+                  min="0"
+                  value={children3To4Years === 0 ? "" : children3To4Years}
+                  onChange={(e) => {
+                    const value = e.target.value
+                    setChildren3To4Years(value === "" ? 0 : Number(value))
+                  }}
+                />
+              </div>
+
+              {/* Free hours breakdown */}
+              <div className="text-sm space-y-1 pt-2 border-t">
+                <p className="font-medium text-gray-700">Free childcare hours per week:</p>
+                {children9MonthsTo3Years > 0 && (
+                  <p className="text-gray-600">
+                    • 9m-3y children: {calculations.freeHours9MonthsTo3Years} hours each
+                    {!calculations.isUnder100k && " (income ≥ £100k)"}
+                  </p>
+                )}
+                {children3To4Years > 0 && (
+                  <p className="text-gray-600">
+                    • 3-4y children: {calculations.freeHours3To4Years} hours each
+                    {calculations.isUnder100k ? " (income < £100k)" : " (15h universal + 0h additional)"}
+                  </p>
+                )}
+                {calculations.isUnder100k && (children9MonthsTo3Years > 0 || children3To4Years > 0) && (
+                  <p className="text-green-600 text-xs">
+                    ✓ Eligible for additional free hours (taxable income {"<"} £100k)
+                  </p>
+                )}
+              </div>
             </CardContent>
           </Card>
         </div>
