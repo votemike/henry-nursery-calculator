@@ -40,7 +40,7 @@ export function SalaryChart({ data }: SalaryChartProps) {
       color: data.taxableIncome >= 100000 ? "#ef4444" : "#22c55e",
     },
     {
-      name: "Take-Home",
+      name: "Take-Home (after nursery costs)",
       value: data.takeHome,
       type: "takehome",
       color: "#10b981",
@@ -85,7 +85,9 @@ export function SalaryChart({ data }: SalaryChartProps) {
       type: "nursery",
       color: "#ec4899",
     },
-  ].filter((item) => item.value > 0 || ["Earnings", "Taxable Income", "Take-Home"].includes(item.name))
+  ].filter(
+    (item) => item.value > 0 || ["Earnings", "Taxable Income", "Take-Home (after nursery costs)"].includes(item.name),
+  )
 
   const maxValue = Math.max(data.grossIncome, ...TAX_THRESHOLDS, PENSION_ALLOWANCE)
 

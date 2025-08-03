@@ -388,7 +388,7 @@ export default function SalaryCalculator() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="text-center">
               <p className="text-2xl font-bold text-green-600">£{calculations.takeHome.toLocaleString()}</p>
-              <p className="text-sm text-muted-foreground">Take Home</p>
+              <p className="text-sm text-muted-foreground">Take-Home (after nursery costs)</p>
             </div>
             <div className="text-center">
               <p className="text-2xl font-bold">£{calculations.grossIncome.toLocaleString()}</p>
