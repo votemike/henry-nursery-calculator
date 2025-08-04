@@ -25,7 +25,7 @@ const PENSION_ANNUAL_ALLOWANCE = 60000
 const CHILDCARE_FREE_HOURS_THRESHOLD = 100000
 const FREE_CHILDCARE_HOURS_PER_WEEK_UNDER_100K = 30
 const FREE_CHILDCARE_HOURS_PER_WEEK_3_4_YEARS = 15
-const SCHOOL_WEEKS_PER_YEAR = 38
+const FREE_CHILDCARE_WEEKS_PER_YEAR = 38 // Free childcare only covers 38 weeks
 
 function calculateTax(taxableIncome: number): number {
   let tax = 0
@@ -82,6 +82,7 @@ export default function SalaryCalculator() {
   const [bikeToWorkSacrifice, setBikeToWorkSacrifice] = useState(0)
   const [nurseryCostPerHour, setNurseryCostPerHour] = useState(12)
   const [nurseryHoursPerWeek, setNurseryHoursPerWeek] = useState(40)
+  const [nurseryWeeksPerYear, setNurseryWeeksPerYear] = useState(52)
   const [children9MonthsTo3Years, setChildren9MonthsTo3Years] = useState(1)
   const [children3To4Years, setChildren3To4Years] = useState(0)
 
@@ -101,16 +102,36 @@ export default function SalaryCalculator() {
 
     // Children 9 months to 3 years: 30 hours free if under £100k, otherwise 0
     const freeHours9MonthsTo3Years = isUnder100k ? FREE_CHILDCARE_HOURS_PER_WEEK_UNDER_100K : 0
-    const paidHours9MonthsTo3Years = Math.max(0, nurseryHoursPerWeek - freeHours9MonthsTo3Years)
-    const cost9MonthsTo3Years =
-      paidHours9MonthsTo3Years * nurseryCostPerHour * SCHOOL_WEEKS_PER_YEAR * children9MonthsTo3Years
+
+    // Calculate costs for free childcare weeks (38 weeks) and additional weeks separately
+    const freeChildcareWeeks = Math.min(nurseryWeeksPerYear, FREE_CHILDCARE_WEEKS_PER_YEAR)
+    const additionalWeeks = Math.max(0, nurseryWeeksPerYear - FREE_CHILDCARE_WEEKS_PER_YEAR)
+
+    // During free childcare weeks: pay for hours above free allowance
+    const paidHours9MonthsTo3YearsFreeWeeks = Math.max(0, nurseryHoursPerWeek - freeHours9MonthsTo3Years)
+    const cost9MonthsTo3YearsFreeWeeks =
+      paidHours9MonthsTo3YearsFreeWeeks * nurseryCostPerHour * freeChildcareWeeks * children9MonthsTo3Years
+
+    // During additional weeks: pay for all hours (no free childcare)
+    const cost9MonthsTo3YearsAdditionalWeeks =
+      nurseryHoursPerWeek * nurseryCostPerHour * additionalWeeks * children9MonthsTo3Years
+
+    const cost9MonthsTo3Years = cost9MonthsTo3YearsFreeWeeks + cost9MonthsTo3YearsAdditionalWeeks
 
     // Children 3-4 years: 15 hours free always, 30 hours if under £100k
     const freeHours3To4Years = isUnder100k
       ? FREE_CHILDCARE_HOURS_PER_WEEK_UNDER_100K
       : FREE_CHILDCARE_HOURS_PER_WEEK_3_4_YEARS
-    const paidHours3To4Years = Math.max(0, nurseryHoursPerWeek - freeHours3To4Years)
-    const cost3To4Years = paidHours3To4Years * nurseryCostPerHour * SCHOOL_WEEKS_PER_YEAR * children3To4Years
+
+    // During free childcare weeks: pay for hours above free allowance
+    const paidHours3To4YearsFreeWeeks = Math.max(0, nurseryHoursPerWeek - freeHours3To4Years)
+    const cost3To4YearsFreeWeeks =
+      paidHours3To4YearsFreeWeeks * nurseryCostPerHour * freeChildcareWeeks * children3To4Years
+
+    // During additional weeks: pay for all hours (no free childcare)
+    const cost3To4YearsAdditionalWeeks = nurseryHoursPerWeek * nurseryCostPerHour * additionalWeeks * children3To4Years
+
+    const cost3To4Years = cost3To4YearsFreeWeeks + cost3To4YearsAdditionalWeeks
 
     const nurseryAnnualCost = cost9MonthsTo3Years + cost3To4Years
 
@@ -131,10 +152,12 @@ export default function SalaryCalculator() {
       nurseryAnnualCost,
       freeHours9MonthsTo3Years,
       freeHours3To4Years,
-      paidHours9MonthsTo3Years,
-      paidHours3To4Years,
+      paidHours9MonthsTo3YearsFreeWeeks,
+      paidHours3To4YearsFreeWeeks,
       cost9MonthsTo3Years,
       cost3To4Years,
+      freeChildcareWeeks,
+      additionalWeeks,
       isUnder100k,
       takeHome,
     }
@@ -147,6 +170,7 @@ export default function SalaryCalculator() {
     bikeToWorkSacrifice,
     nurseryCostPerHour,
     nurseryHoursPerWeek,
+    nurseryWeeksPerYear,
     children9MonthsTo3Years,
     children3To4Years,
   ])
@@ -314,6 +338,20 @@ export default function SalaryCalculator() {
                 />
               </div>
               <div className="space-y-2">
+                <Label htmlFor="nursery-weeks">Weeks Per Year</Label>
+                <Input
+                  id="nursery-weeks"
+                  type="number"
+                  min="1"
+                  max="52"
+                  value={nurseryWeeksPerYear === 0 ? "" : nurseryWeeksPerYear}
+                  onChange={(e) => {
+                    const value = e.target.value
+                    setNurseryWeeksPerYear(value === "" ? 0 : Number(value))
+                  }}
+                />
+              </div>
+              <div className="space-y-2">
                 <Label htmlFor="children-9m-3y">Children aged 9 months - 3 years</Label>
                 <Input
                   id="children-9m-3y"
@@ -342,16 +380,24 @@ export default function SalaryCalculator() {
 
               {/* Free hours breakdown */}
               <div className="text-sm space-y-1 pt-2 border-t">
-                <p className="font-medium text-gray-700">Free childcare hours per week:</p>
+                <p className="font-medium text-gray-700">Free childcare breakdown:</p>
+                <p className="text-gray-600 text-xs">
+                  • Free childcare covers {calculations.freeChildcareWeeks} weeks per year
+                </p>
+                {calculations.additionalWeeks > 0 && (
+                  <p className="text-gray-600 text-xs">
+                    • Additional {calculations.additionalWeeks} weeks: full cost applies
+                  </p>
+                )}
                 {children9MonthsTo3Years > 0 && (
                   <p className="text-gray-600">
-                    • 9m-3y children: {calculations.freeHours9MonthsTo3Years} hours each
+                    • 9m-3y children: {calculations.freeHours9MonthsTo3Years} free hours/week
                     {!calculations.isUnder100k && " (income ≥ £100k)"}
                   </p>
                 )}
                 {children3To4Years > 0 && (
                   <p className="text-gray-600">
-                    • 3-4y children: {calculations.freeHours3To4Years} hours each
+                    • 3-4y children: {calculations.freeHours3To4Years} free hours/week
                     {calculations.isUnder100k ? " (income < £100k)" : " (15h universal + 0h additional)"}
                   </p>
                 )}

@@ -28,6 +28,17 @@ const PENSION_ALLOWANCE = 60000
 export function SalaryChart({ data }: SalaryChartProps) {
   const chartData = [
     {
+      name: "Breakdown",
+      takeHome: data.takeHome,
+      tax: data.tax,
+      nationalInsurance: data.nationalInsurance,
+      employeePension: data.employeePensionContribution,
+      electricCar: data.electricCarSacrifice,
+      bikeToWork: data.bikeToWorkSacrifice,
+      nursery: data.nurseryAnnualCost,
+      type: "breakdown",
+    },
+    {
       name: "Earnings",
       value: data.grossIncome,
       type: "earnings",
@@ -47,9 +58,8 @@ export function SalaryChart({ data }: SalaryChartProps) {
     },
     {
       name: "Total Pension",
-      employeePension: data.employeePensionContribution,
-      employerPension: data.employerPensionContribution,
-      value: data.totalPensionContribution,
+      employeePensionForStack: data.employeePensionContribution,
+      employerPensionForStack: data.employerPensionContribution,
       type: "pension",
       color: data.totalPensionContribution > PENSION_ALLOWANCE ? "#ef4444" : "#3b82f6",
       employeeColor: data.totalPensionContribution > PENSION_ALLOWANCE ? "#ef4444" : "#3b82f6",
@@ -86,7 +96,11 @@ export function SalaryChart({ data }: SalaryChartProps) {
       color: "#ec4899",
     },
   ].filter(
-    (item) => item.value > 0 || ["Earnings", "Taxable Income", "Take-Home (after nursery costs)"].includes(item.name),
+    (item) =>
+      item.name === "Breakdown" ||
+      item.name === "Total Pension" ||
+      item.value > 0 ||
+      ["Earnings", "Taxable Income", "Take-Home (after nursery costs)"].includes(item.name),
   )
 
   const maxValue = Math.max(data.grossIncome, ...TAX_THRESHOLDS, PENSION_ALLOWANCE)
@@ -95,13 +109,41 @@ export function SalaryChart({ data }: SalaryChartProps) {
     <div className="space-y-4">
       <ChartContainer
         config={{
+          takeHome: {
+            label: "Take-Home",
+            color: "#10b981",
+          },
+          tax: {
+            label: "Tax",
+            color: "#f59e0b",
+          },
+          nationalInsurance: {
+            label: "National Insurance",
+            color: "#f97316",
+          },
           employeePension: {
             label: "Employee Pension",
             color: "#3b82f6",
           },
-          employerPension: {
+          employeePensionForStack: {
+            label: "Employee Pension",
+            color: "#3b82f6",
+          },
+          employerPensionForStack: {
             label: "Employer Pension",
             color: "#93c5fd",
+          },
+          electricCar: {
+            label: "Electric Car",
+            color: "#8b5cf6",
+          },
+          bikeToWork: {
+            label: "Bike to Work",
+            color: "#a855f7",
+          },
+          nursery: {
+            label: "Nursery Costs",
+            color: "#ec4899",
           },
           value: {
             label: "Amount (£)",
@@ -130,7 +172,51 @@ export function SalaryChart({ data }: SalaryChartProps) {
             <ChartTooltip
               content={({ active, payload, label }) => {
                 if (active && payload && payload.length) {
-                  if (label === "Total Pension") {
+                  if (label === "Breakdown") {
+                    // For breakdown bar, show all non-zero segments
+                    const segments = payload.filter((p) => p.value > 0)
+                    if (segments.length === 1) {
+                      const segment = segments[0]
+                      const displayNames = {
+                        takeHome: "Take-Home",
+                        tax: "Tax",
+                        nationalInsurance: "National Insurance",
+                        employeePension: "Employee Pension",
+                        electricCar: "Electric Car",
+                        bikeToWork: "Bike to Work",
+                        nursery: "Nursery Costs",
+                      }
+                      return (
+                        <div className="bg-white p-3 border rounded-lg shadow-lg">
+                          <p className="font-medium">{displayNames[segment.dataKey] || segment.dataKey}</p>
+                          <p>£{Number(segment.value).toLocaleString()}</p>
+                        </div>
+                      )
+                    } else {
+                      // Show all segments if multiple are hovered
+                      return (
+                        <div className="bg-white p-3 border rounded-lg shadow-lg">
+                          <p className="font-medium">Breakdown</p>
+                          {segments.map((segment) => {
+                            const displayNames = {
+                              takeHome: "Take-Home",
+                              tax: "Tax",
+                              nationalInsurance: "National Insurance",
+                              employeePension: "Employee Pension",
+                              electricCar: "Electric Car",
+                              bikeToWork: "Bike to Work",
+                              nursery: "Nursery Costs",
+                            }
+                            return (
+                              <p key={segment.dataKey} className="text-sm">
+                                {displayNames[segment.dataKey]}: £{Number(segment.value).toLocaleString()}
+                              </p>
+                            )
+                          })}
+                        </div>
+                      )
+                    }
+                  } else if (label === "Total Pension") {
                     return (
                       <div className="bg-white p-3 border rounded-lg shadow-lg">
                         <p className="font-medium">{label}</p>
@@ -179,24 +265,35 @@ export function SalaryChart({ data }: SalaryChartProps) {
               label={{ value: "Pension Limit", position: "right", fill: "#ef4444" }}
             />
 
-            {/* Employee pension contributions (bottom part of pension stack) */}
-            <Bar dataKey="employeePension" stackId="pension" radius={[0, 0, 0, 0]}>
+            {/* Stacked breakdown bar */}
+            <Bar dataKey="takeHome" stackId="breakdown" fill="#10b981" radius={[0, 0, 0, 0]} />
+            <Bar dataKey="tax" stackId="breakdown" fill="#f59e0b" radius={[0, 0, 0, 0]} />
+            <Bar dataKey="nationalInsurance" stackId="breakdown" fill="#f97316" radius={[0, 0, 0, 0]} />
+            <Bar dataKey="employeePension" stackId="breakdown" fill="#3b82f6" radius={[0, 0, 0, 0]} />
+            <Bar dataKey="electricCar" stackId="breakdown" fill="#8b5cf6" radius={[0, 0, 0, 0]} />
+            <Bar dataKey="bikeToWork" stackId="breakdown" fill="#a855f7" radius={[0, 0, 0, 0]} />
+            <Bar dataKey="nursery" stackId="breakdown" fill="#ec4899" radius={[4, 4, 0, 0]} />
+
+            {/* Stacked pension bar - only for Total Pension */}
+            <Bar dataKey="employeePensionForStack" stackId="pension" radius={[0, 0, 0, 0]}>
               {chartData.map((entry, index) => (
-                <Cell key={`employee-${index}`} fill={entry.employeeColor || "transparent"} />
+                <Cell key={`employee-${index}`} fill={entry.type === "pension" ? entry.employeeColor : "transparent"} />
               ))}
             </Bar>
 
-            {/* Employer pension contributions (top part of pension stack) */}
-            <Bar dataKey="employerPension" stackId="pension" radius={[4, 4, 0, 0]}>
+            <Bar dataKey="employerPensionForStack" stackId="pension" radius={[4, 4, 0, 0]}>
               {chartData.map((entry, index) => (
-                <Cell key={`employer-${index}`} fill={entry.employerColor || "transparent"} />
+                <Cell key={`employer-${index}`} fill={entry.type === "pension" ? entry.employerColor : "transparent"} />
               ))}
             </Bar>
 
-            {/* Regular bars for non-pension items */}
+            {/* Regular bars for non-pension, non-breakdown items */}
             <Bar dataKey="value" radius={[4, 4, 0, 0]}>
               {chartData.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={entry.type === "pension" ? "transparent" : entry.color} />
+                <Cell
+                  key={`cell-${index}`}
+                  fill={entry.type === "pension" || entry.type === "breakdown" ? "transparent" : entry.color}
+                />
               ))}
             </Bar>
           </BarChart>
@@ -249,8 +346,9 @@ export function SalaryChart({ data }: SalaryChartProps) {
 
         <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
           <p className="text-blue-800 text-sm">
-            <strong>Chart Guide:</strong> The pension bar shows employee contributions (darker blue) and employer
-            contributions (lighter blue) stacked together. Hover over the pension bar to see the breakdown.
+            <strong>Chart Guide:</strong> The "Breakdown" bar shows how your earnings are allocated. The pension bar
+            shows employee contributions (darker blue) and employer contributions (lighter blue) stacked together. Hover
+            over any segment to see exact values.
           </p>
         </div>
       </div>
