@@ -9,7 +9,7 @@ import { Suspense } from "react"
 
 export const metadata: Metadata = {
   title: "HENRY Nursery Calculator",
-  description: "A tool to visualise income and nursery costs.",
+  description: "A tool to visualise income and nursery costs (including dual income households).",
   generator: "v0.dev",
 }
 
