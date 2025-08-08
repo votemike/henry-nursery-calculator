@@ -8,8 +8,8 @@ import { ThemeProvider } from "next-themes"
 import { Suspense } from "react"
 
 export const metadata: Metadata = {
-  title: "v0 App",
-  description: "Created with v0",
+  title: "HENRY Nursery Calculator",
+  description: "A tool to visualise income and nursery costs.",
   generator: "v0.dev",
 }
 

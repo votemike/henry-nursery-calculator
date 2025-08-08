@@ -150,14 +150,14 @@ export function SalaryChart({ data }: SalaryChartProps) {
             color: "hsl(var(--chart-1))",
           },
         }}
-        className="min-h-[500px]"
+        // className="min-h-[500px]"
       >
-        <ResponsiveContainer width="100%" height={500}>
+        <ResponsiveContainer width="100%">
           <BarChart
             data={chartData}
             margin={{
               top: 20,
-              right: 30,
+              right: 40,
               left: 20,
               bottom: 80,
             }}
